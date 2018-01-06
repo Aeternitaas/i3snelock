@@ -44,16 +44,34 @@ case "$1" in
         esac
     ;;
     -s | --startup)
+        shift
+
         if [ ! -d $img_folder ]; then
             # Create the folder at img_folder if it does not exist.
-            echo "Created file located at $img_folder"
+            echo "Created directory located at $img_folder"
             mkdir -p "$img_folder"
         fi
+
+        mod_file="$img_folder/modified_file.png"
         
-        case "$2" in
+        case "$1" in
             "")
                 # If no file is specified, copy feh_image.
-                cp "$feh_image" "$img_folder/modified_file.png"
+                cp "$feh_image" "$mod_file"
+                ;;
+            *)
+                # Else, simply copy the specified file.
+                cp "$1" "$mod_file"
                 ;;
         esac
+
+
+        # TODO: implement blur specification.
+
+        # Sets up configuration types. 
+        dim=$(xdpyinfo | grep dimensions | grep -o [0-9]*x[0-9]*\ pixels | grep -o [0-9][0-9]*x[0-9]*)
+
+        gm convert -size $dim $mod_file -resize $dim \
+            -gravity center $mod_file
+
 esac
