@@ -2,7 +2,7 @@
 
 # Author: Ket-Meng Cheng
 # Github: http://www.github.com/Aeternitaas
-# Dependencies: graphicsmagick, feh, 
+# Dependencies: graphicsmagick, feh, xdpyinfo
 
 # Create an folder to hold the wallpaper phases
 img_folder="$HOME/.cache/i3snelock"
@@ -53,6 +53,8 @@ case "$1" in
         fi
 
         mod_file="$img_folder/modified_file.png"
+        dimblur="$img_folder/dimblur.png"
+        blur="$img_folder/blur.png"
         
         case "$1" in
             "")
@@ -71,7 +73,13 @@ case "$1" in
         # Sets up configuration types. 
         dim=$(xdpyinfo | grep dimensions | grep -o [0-9]*x[0-9]*\ pixels | grep -o [0-9][0-9]*x[0-9]*)
 
-        gm convert -size $dim $mod_file -resize $dim \
-            -gravity center $mod_file
+        # Converts the image to the screen's dimensions.
+        gm convert -size "$dim" "$mod_file" -resize "$dim" \
+            -gravity center "$mod_file"
 
+        # Applies Gaussian blur at a radius of 10 with a SD of 2.
+        gm convert -blur 10x2 "$mod_file" "$blur"
+
+        # Applies dimming to the blurred image.
+        gm convert -fill black -colorize 50% "$blur" "$dimblur"
 esac
