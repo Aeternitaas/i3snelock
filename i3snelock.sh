@@ -2,7 +2,7 @@
 
 # Author: Ket-Meng Cheng
 # Github: http://www.github.com/Aeternitaas
-# Dependencies: graphicsmagick, feh, xdpyinfo
+# Dependencies: graphicsmagick, feh, xdpyinfo, escrotum
 
 # Create an folder to hold the wallpaper phases
 img_folder="$HOME/.cache/i3snelock"
@@ -10,8 +10,17 @@ img_folder="$HOME/.cache/i3snelock"
 # Grabs the current background through feh
 feh_image=$(cat ~/.fehbg | grep feh | grep -o \'/.*\' | grep -o [^\'].*[^\'])
 
+# Dimblur file.
+dimblur="$img_folder""/dimblur.png"
+
+# Regular blur file.
+blur="$img_folder""/blur.png"
+
+# Modified file.
+mod_file="$img_folder/modified_file.png"
+
 dimblur() {
-    cp 
+    i3lock -t -n -i "$1"
 }
 
 case "$1" in 
@@ -30,19 +39,35 @@ case "$1" in
 
     -l | --lock) 
         case "$2" in
+            # TODO: add other configurations.
             "")
                 # If setup has not been run, exit and prompt the user to do so.
                 if [ ! -d $img_folder ]; then 
                     echo "Please run \`i3snelock -s [IMGFILE]\` to set up i3snelock."
                     exit 2
-                fi
-
+                fi 
                 # Default configuration; dim + blur
-                dimblur
+                dimblur "$dimblur"
                 ;;
-                # TODO: add other configurations.
+            blur)
+                # TODO: finish blur.
+                ;;
+            screen)
+                screenshot="$HOME""/.cache/i3snelock/screenshot.png"
+
+                # Take screenshot.
+                escrotum -C && xclip -selection clipboard -t image/png -o > $screenshot
+
+                # Applies Gaussian blur at a radius of 10 with a SD of 2.
+                # Applies dimming to the blurred image.
+                gm convert -resize "$yres""^" -gravity center -blur 10x2 -fill black \
+                    -colorize 50% "$screenshot" "$screenshot"
+
+                dimblur "$screenshot"
+                ;;
         esac
     ;;
+
     -s | --startup)
         shift
 
@@ -52,9 +77,6 @@ case "$1" in
             mkdir -p "$img_folder"
         fi
 
-        mod_file="$img_folder/modified_file.png"
-        dimblur="$img_folder/dimblur.png"
-        blur="$img_folder/blur.png"
         
         case "$1" in
             "")
@@ -66,16 +88,17 @@ case "$1" in
                 cp "$1" "$mod_file"
                 ;;
         esac
-
-
-        # TODO: implement blur specification.
+        
+        # TODO: implement blur per-user specification.
+        # TODO: implement screenshot blurring.
 
         # Sets up configuration types. 
         dim=$(xdpyinfo | grep dimensions | grep -o [0-9]*x[0-9]*\ pixels | grep -o [0-9][0-9]*x[0-9]*)
+        xres=$(echo "$dim" | grep -o [0-9]*x | grep -o [0-9]*)
+        yres=$(echo "$dim" | grep -o x[0-9]* | grep -o [0-9]*)
 
         # Converts the image to the screen's dimensions.
-        gm convert -size "$dim" "$mod_file" -resize "$dim" \
-            -gravity center "$mod_file"
+        gm convert -resize "$yres""^" -gravity center "$mod_file" "$mod_file"
 
         # Applies Gaussian blur at a radius of 10 with a SD of 2.
         gm convert -blur 10x2 "$mod_file" "$blur"
