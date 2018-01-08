@@ -19,8 +19,15 @@ blur="$img_folder""/blur.png"
 # Modified file.
 mod_file="$img_folder/modified_file.png"
 
-dimblur() {
+lock() {
     i3lock -t -n -i "$1"
+}
+
+check_folder() {
+    if [ ! -d $img_folder ]; then 
+        echo "Please run \`i3snelock -s [IMGFILE]\` to set up i3snelock."
+        exit 2
+    fi 
 }
 
 case "$1" in 
@@ -42,26 +49,26 @@ case "$1" in
             # TODO: add other configurations.
             "")
                 # If setup has not been run, exit and prompt the user to do so.
-                if [ ! -d $img_folder ]; then 
-                    echo "Please run \`i3snelock -s [IMGFILE]\` to set up i3snelock."
-                    exit 2
-                fi 
+                check_folder
+
                 # Default configuration; dim + blur
-                dimblur "$dimblur"
+                lock "$dimblur"
                 ;;
             blur)
-                # TODO: finish blur.
+                check_folder
+
+                lock "$blur"
                 ;;
             screen)
+                # TODO: caching? Probably not. Could use i3lock's inbuilt -B blur.
                 screenshot="$HOME""/.cache/i3snelock/screenshot.png"
 
                 # Take screenshot.
                 escrotum -C && xclip -selection clipboard -t image/png -o > $screenshot
 
-                # Applies Gaussian blur at a radius of 10 with a SD of 2.
-                # Applies dimming to the blurred image.
-                gm convert -resize "$yres""^" -gravity center -blur 10x2 -fill black \
-                    -colorize 50% "$screenshot" "$screenshot"
+                # Applies Gaussian blur at a radius of 10 with a SD of 2.  # Applies dimming to the blurred image.
+                gm convert -blur 10x2 -fill black -colorize 50% \
+                    "$screenshot" "$screenshot"
 
                 dimblur "$screenshot"
                 ;;
@@ -73,10 +80,8 @@ case "$1" in
 
         if [ ! -d $img_folder ]; then
             # Create the folder at img_folder if it does not exist.
-            echo "Created directory located at $img_folder"
-            mkdir -p "$img_folder"
+            echo "Created directory located at $img_folder" mkdir -p "$img_folder"
         fi
-
         
         case "$1" in
             "")
@@ -91,6 +96,7 @@ case "$1" in
         
         # TODO: implement blur per-user specification.
         # TODO: implement screenshot blurring.
+        # TODO: draw shapes.
 
         # Sets up configuration types. 
         dim=$(xdpyinfo | grep dimensions | grep -o [0-9]*x[0-9]*\ pixels | grep -o [0-9][0-9]*x[0-9]*)
@@ -105,4 +111,5 @@ case "$1" in
 
         # Applies dimming to the blurred image.
         gm convert -fill black -colorize 50% "$blur" "$dimblur"
+        ;;
 esac
