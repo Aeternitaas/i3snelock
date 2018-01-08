@@ -2,7 +2,7 @@
 
 # Author: Ket-Meng Cheng
 # Github: http://www.github.com/Aeternitaas
-# Dependencies: graphicsmagick, feh, xdpyinfo, escrotum
+# Dependencies: graphicsmagick, feh, xdpyinfo, escrotum, ffmpeg
 
 # Create an folder to hold the wallpaper phases
 img_folder="$HOME/.cache/i3snelock"
@@ -37,8 +37,7 @@ case "$1" in
         echo
         echo "  -l, --lock [LOCKSTYLE]             locks the screen with the lock setting chosen; leave"
         echo "                                     may be left blank for default dimblur setting"
-        echo "  -h, --help                         displays help prompt"
-        echo "  -s, --startup [IMAGEFILE]          initializes i3snelock with a given background image;"
+        echo "  -h, --help                         displays help prompt" echo "  -s, --startup [IMAGEFILE]          initializes i3snelock with a given background image;"
         echo "                                     to be run if being run for the first time or if a"
         echo "                                     custom background image is desired"
         exit 1
@@ -67,10 +66,12 @@ case "$1" in
                 escrotum -C && xclip -selection clipboard -t image/png -o > $screenshot
 
                 # Applies Gaussian blur at a radius of 10 with a SD of 2.  # Applies dimming to the blurred image.
-                gm convert -blur 10x2 -fill black -colorize 50% \
-                    "$screenshot" "$screenshot"
+                #gm convert -blur 10x2 -fill black -colorize 50% \
+                    #"$screenshot" "$screenshot"
 
-                dimblur "$screenshot"
+                ffmpeg -y -loglevel quiet -i "$screenshot" -vf "boxblur=5:2" "$screenshot"
+
+                lock "$screenshot"
                 ;;
         esac
     ;;
