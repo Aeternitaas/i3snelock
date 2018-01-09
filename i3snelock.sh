@@ -19,8 +19,16 @@ blur="$img_folder""/blur.png"
 # Modified file.
 mod_file="$img_folder/modified_file.png"
 
+# Sets up configuration types. 
+dim=$(xdpyinfo | grep dimensions | grep -o [0-9]*x[0-9]*\ pixels | grep -o [0-9][0-9]*x[0-9]*)
+xres=$(echo "$dim" | grep -o [0-9]*x | grep -o [0-9]*)
+yres=$(echo "$dim" | grep -o x[0-9]* | grep -o [0-9]*)
+
 lock() {
-    i3lock -t -n -i "$1"
+    lightgrey="d9d9d9ff"
+    i3lock -t -n -k --veriftext="" --wrongtext="" --ringcolor="e6e6e6ff" --keyhlcolor="737373ff" \
+        --separatorcolor="737373ff" --insidecolor="7373730f" --linecolor="737373ff" --timecolor=$lightgrey \
+        --datecolor=$lightgrey -i "$1"
 }
 
 check_folder() {
@@ -37,7 +45,8 @@ case "$1" in
         echo
         echo "  -l, --lock [LOCKSTYLE]             locks the screen with the lock setting chosen; leave"
         echo "                                     may be left blank for default dimblur setting"
-        echo "  -h, --help                         displays help prompt" echo "  -s, --startup [IMAGEFILE]          initializes i3snelock with a given background image;"
+        echo "  -h, --help                         displays help prompt" 
+        echo "  -s, --startup [IMAGEFILE]          initializes i3snelock with a given background image;"
         echo "                                     to be run if being run for the first time or if a"
         echo "                                     custom background image is desired"
         exit 1
@@ -59,17 +68,18 @@ case "$1" in
                 lock "$blur"
                 ;;
             screen)
-                # TODO: caching? Probably not. Could use i3lock's inbuilt -B blur.
                 screenshot="$HOME""/.cache/i3snelock/screenshot.png"
 
                 # Take screenshot.
                 escrotum -C && xclip -selection clipboard -t image/png -o > $screenshot
 
-                # Applies Gaussian blur at a radius of 10 with a SD of 2.  # Applies dimming to the blurred image.
-                #gm convert -blur 10x2 -fill black -colorize 50% \
-                    #"$screenshot" "$screenshot"
+                xcenter=$(expr $xres / 4 + $xres / 8)
+                ycenter=$(expr $yres / 3)
 
-                ffmpeg -y -loglevel quiet -i "$screenshot" -vf "boxblur=5:2" "$screenshot"
+                # Applies Gaussian blur at a radius of 10 with a SD of 2.  # Applies dimming to the blurred image.
+                ffmpeg -y -loglevel quiet -i "$screenshot" -filter_complex "[0:v]boxblur=10:2, eq=gamma=.9[bg]; \
+                    [0:v]crop=$(expr $xres / 4):$(expr $yres / 3):$xcenter:$ycenter, eq=gamma=1.1, boxblur=10:2[fg]; \
+                    [bg][fg]overlay=$xcenter:$ycenter[v]" -map "[v]" "$screenshot"
 
                 lock "$screenshot"
                 ;;
@@ -98,11 +108,6 @@ case "$1" in
         # TODO: implement blur per-user specification.
         # TODO: implement screenshot blurring.
         # TODO: draw shapes.
-
-        # Sets up configuration types. 
-        dim=$(xdpyinfo | grep dimensions | grep -o [0-9]*x[0-9]*\ pixels | grep -o [0-9][0-9]*x[0-9]*)
-        xres=$(echo "$dim" | grep -o [0-9]*x | grep -o [0-9]*)
-        yres=$(echo "$dim" | grep -o x[0-9]* | grep -o [0-9]*)
 
         # Converts the image to the screen's dimensions.
         gm convert -resize "$yres""^" -gravity center "$mod_file" "$mod_file"
