@@ -2,7 +2,7 @@
 
 # Author: Ket-Meng Cheng
 # Github: http://www.github.com/Aeternitaas
-# Dependencies: graphicsmagick, feh, xdpyinfo, escrotum, ffmpeg
+# Dependencies: feh, xdpyinfo, escrotum, ffmpeg
 
 # Create an folder to hold the wallpaper phases
 img_folder="$HOME/.cache/i3snelock"
