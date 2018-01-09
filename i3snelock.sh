@@ -77,8 +77,8 @@ case "$1" in
                 ycenter=$(expr $yres / 3)
 
                 # Applies Gaussian blur at a radius of 10 with a SD of 2.  # Applies dimming to the blurred image.
-                ffmpeg -y -loglevel quiet -i "$screenshot" -filter_complex "[0:v]boxblur=10:2, eq=gamma=.9[bg]; \
-                    [0:v]crop=$(expr $xres / 4):$(expr $yres / 3):$xcenter:$ycenter, eq=gamma=1.1, boxblur=10:2[fg]; \
+                ffmpeg -y -loglevel quiet -i "$screenshot" -filter_complex "[0:v]boxblur=10:1.5, eq=gamma=.8[bg]; \
+                    [0:v]crop=$(expr $xres / 4):$(expr $yres / 3):$xcenter:$ycenter, eq=gamma=1.05, boxblur=10:1.5[fg]; \
                     [bg][fg]overlay=$xcenter:$ycenter[v]" -map "[v]" "$screenshot"
 
                 lock "$screenshot"
@@ -107,13 +107,17 @@ case "$1" in
         
         # TODO: implement blur per-user specification.
         # TODO: implement screenshot blurring.
-        # TODO: draw shapes.
 
-        # Converts the image to the screen's dimensions.
-        gm convert -resize "$yres""^" -gravity center "$mod_file" "$mod_file"
+        xcenter=$(expr $xres / 4 + $xres / 8)
+        ycenter=$(expr $yres / 3)
 
-        # Applies Gaussian blur at a radius of 10 with a SD of 2.
-        gm convert -blur 10x2 "$mod_file" "$blur"
+        ffmpeg -y -loglevel quiet -i "$mod_file" -filter_complex "scale=$xres:$yres, boxblur=10:1.5" "$blur"
+        ffmpeg -y -loglevel quiet -i "$blur" -filter_complex "[0:v]crop=$(expr $xres / 4):$(expr $yres / 3):$xcenter:$ycenter, eq=gamma=1.05[fg]; \
+            [0:v][fg]overlay=$xcenter:$ycenter[v]" -map "[v]" "$blur"
+
+        ffmpeg -y -loglevel quiet -i "$blur" -filter_complex "[0:v]eq=gamma=.8[bg], \
+            [0:v]crop=$(expr $xres / 4):$(expr $yres / 3):$xcenter:$ycenter, eq=gamma=1.05[fg]; \
+            [bg][fg]overlay=$xcenter:$ycenter[v]" -map "[v]" "$blur"
 
         # Applies dimming to the blurred image.
         gm convert -fill black -colorize 50% "$blur" "$dimblur"
